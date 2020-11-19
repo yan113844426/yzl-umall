@@ -10,6 +10,8 @@ import cate from "./modules/cate"
 import specs from "./modules/specs"
 import vip from "./modules/vip"
 import goods from "./modules/goods"
+import banner from "./modules/banner"
+import seckill from "./modules/seckill"
 //导出仓库
 export default new Vuex.Store({
     state,
@@ -21,5 +23,7 @@ export default new Vuex.Store({
         specs,
         vip,
         goods,
+        banner,
+        seckill,
     }
 })

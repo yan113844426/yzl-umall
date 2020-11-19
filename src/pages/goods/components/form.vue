@@ -1,11 +1,14 @@
 <template>
   <div>
-    <el-dialog :title="info.title" :visible.sync="info.isshow" @closed="closed"  @opened="opened">
-      <el-form :model="user">
+    <el-dialog :title="info.title" :visible.sync="info.isshow" @closed="closed" @opened="opened">
+      <!-- 在验证规则的时候，要记得给form绑定一个rules属性-->
+      <el-form :model="user" :rules="rules">
         <!-- 4.绑定一级分类列表数据，需要先请求回来 -->
-        <el-form-item label="一级分类" label-width="120px">
+        <!-- 在验证的规则还得给每一项el-form-item绑定一个prop -->
+        <el-form-item label="一级分类" label-width="120px" prop="first_cateid">
           <el-select placeholder="请选择一级分类" v-model="user.first_cateid" @change="changeFirst">
-            <!-- 5.用请求回来的分类数据渲染一级分类 -->
+            <!-- 6.遍历一级分类 -->
+
             <el-option
               v-for="item in cateList"
               :key="item.id"
@@ -33,18 +36,16 @@
         <el-form-item label="市场价格" label-width="120px" prop="market_price">
           <el-input v-model="user.market_price" placeholder="请输入市场价格"></el-input>
         </el-form-item>
-        <!-- 8.该弄图片了 -->
         <el-form-item label="图片" label-width="120px">
           <!-- 上传文件 -->
           <div class="myupload">
             <h3>+</h3>
             <img class="img" v-if="imgUrl" :src="imgUrl" alt />
+
             <input v-if="info.isshow" type="file" class="ipt" @change="changeFile" />
           </div>
         </el-form-item>
-        {{user}}
-        <!-- 15.商品规格的数据渲染 -->
-        <el-form-item label="商品规格" label-width="120px">
+        <el-form-item label="商品规格" label-width="120px" prop="specsid">
           <!-- 11.遍历 -->
           <el-select placeholder="请选择商品规格" v-model="user.specsid" @change="changeSpecsId">
             <el-option
@@ -62,7 +63,6 @@
             <el-option v-for="item in attrsList" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
-
         <el-form-item label="是否新品" label-width="120px">
           <el-radio v-model="user.isnew" :label="1">是</el-radio>
           <el-radio v-model="user.isnew" :label="2">否</el-radio>
@@ -76,10 +76,10 @@
         </el-form-item>
         <el-form-item label="描述" label-width="120px">
           <!--富文本编辑器，第一步需要建立一个r容器，一会在它上面建立富文本编辑器
-           -->
-           <!-- 给它绑定isshow是希望它不要建立多个，始终有一个 -->
-           <div id="edit" v-if="info.isshow"></div>
-
+          -->
+          <div v-if="info.isshow" id="edit"></div>
+          <!-- 给它绑定isshow是希望它不要建立多个，始终有一个 -->
+          <div id="edit" v-if="info.isshow"></div>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -106,6 +106,33 @@ export default {
   props: ["info"],
   data() {
     return {
+      //这里的规则只是提示一下用户，为了美观，并不起实际作用
+      rules: {
+        first_cateid: [
+          { required: true, message: "请输入一级分类", trigger: "change" },
+        ],
+        second_cateid: [
+          { required: true, message: "请输入二级分类", trigger: "change" },
+        ],
+        goodsname: [
+          { required: true, message: "请输入商品名称", trigger: "blur" },
+        ],
+        price: [{ required: true, message: "请输入商品价格", trigger: "blur" }],
+        market_price: [
+          { required: true, message: "请输入商品市场价格", trigger: "blur" },
+        ],
+        specsid: [
+          { required: true, message: "请输入商品规格", trigger: "change" },
+        ],
+        specsattr: [
+          {
+            type: "array",
+            required: true,
+            message: "请至少选择一个规格属性",
+            trigger: "change",
+          },
+        ],
+      },
       user: {
         //选中哪个获取哪个的id
         first_cateid: "",
@@ -163,7 +190,6 @@ export default {
     //10.处理图片
     changeFile(e) {
       let file = e.target.files[0];
-      //验证
       this.imgUrl = URL.createObjectURL(file);
       this.user.img = file;
     },
@@ -184,47 +210,102 @@ export default {
       this.attrsList = obj.attrs;
       console.log(this.attrsList);
     },
+    //清空
     empty() {
       this.user = {
-        status: "1",
-        specsname: "",
-        attrs: "",
+        first_cateid: "",
+        second_cateid: "",
+        goodsname: "",
+        price: "",
+        market_price: "",
+        img: null,
+        description: "",
+        specsid: "",
+        specsattr: [], //此时是数组，后端要的是 "[]"
+        isnew: 1,
+        ishot: 1,
+        status: 1,
       };
-      //属性值
-      this.attrArr = [{ value: "" }];
+      //二级分类的list
+      this.secondCateList = [];
+      //图片临时地址
+      this.imgUrl = "";
+      //规格属性list
+      this.attrsList = [];
+    },
+    //我们这里在提交之前需要验证数据
+    check() {
+      //注意return是结束当前所在的函数，这是结束check，并没有结束add,
+      //这里的return结果是promise对象，promise对象只有都符合，才会走到resolve,
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.first_cateid === "") {
+          errorAlert("一级分类不能为空");
+          return;
+          //如果这个满足了，就没有机会找到resolve
+        }
+        if (this.user.second_cateid === "") {
+          errorAlert("二级分类不能为空");
+          return;
+        }
+        if (this.user.goodsname === "") {
+          errorAlert("商品名称为空");
+          return;
+        }
+        if (this.user.price === "") {
+          errorAlert("商品价格为空");
+          return;
+        }
+        if (this.user.market_price === "") {
+          errorAlert("商品市场价格为空");
+          return;
+        }
+        if (!this.user.img) {
+          errorAlert("请选择图片");
+          return;
+        }
+        if (this.user.specsid === "") {
+          errorAlert("请选择商品规格");
+          return;
+        }
+        if (this.user.specsattr.length === 0) {
+          errorAlert("请选择商品属性");
+          return;
+        }
+        if (this.editor.txt.html() === "") {
+          errorAlert("请输入商品描述");
+          return;
+        }
+        resolve();
+      });
     },
     add() {
-      // 17.实现添加按钮的功能
-      //我们需要单独处理一下富文本编辑器的内容
-      
-      //该实现添加按钮了，我们需要先复制一份出来
-      let d = { ...this.user };
-      //因为提交的时候要的规格属性是字符串数组，如果直接在user上改的话，就会引起数据驱动，双向数据绑定，导致选择哪里也成了字符串数组
-      d.specsattr = JSON.stringify(d.specsattr);
-      //发起请求
-      reqgoodsAdd(d).then((res) => {
-        if (res.data.code === 200) {
-          successAlert("添加成功");
-          this.cancel();
-          this.empty();
-          //刷新list
-          this.reqGoodsList();
-          //添加也会引起分页的变化
-          this.reqGoodsCount();
-        }
+      this.check().then(() => {
+        // 17.实现添加按钮的功能
+        //我们需要单独处理一下富文本编辑器的内容
+        //将编辑器的内容取出来给user.description
+        //this.editor.txt.html() 取值
+        this.user.description = this.editor.txt.html();
+        //该实现添加按钮了，我们需要先复制一份出来
+        let d = { ...this.user };
+        //因为提交的时候要的规格属性是字符串数组，如果直接在user上改的话，就会引起数据驱动，双向数据绑定，导致选择哪里也成了字符串数组
+        d.specsattr = JSON.stringify(d.specsattr);
+        //发起请求
+        reqgoodsAdd(d).then((res) => {
+          if (res.data.code === 200) {
+            successAlert("添加成功");
+            this.cancel();
+            this.empty();
+            //刷新list
+            this.reqGoodsList();
+            //添加也会引起分页的变化
+            this.reqGoodsCount();
+          }
+        });
       });
     },
     cancel() {
       this.info.isshow = false;
-    },
-    getOne(id) {
-      reqspecsDetail(id).then((res) => {
-        this.user = res.data.list[0];
-        //  '["s","M"]'-->[{value:"s"},{value:"M"}]
-        this.attrArr = JSON.parse(this.user.attrs).map((item) => ({
-          value: item,
-        }));
-      });
     },
     update() {
       this.user.attrs = JSON.stringify(this.attrArr.map((item) => item.value));
@@ -241,9 +322,10 @@ export default {
     opened() {
       this.editor = new E("#edit");
       this.editor.create();
+      this.editor.txt.html(this.user.description);
     },
     closed() {
-      if (this.info.title === "编辑分类") {
+      if (this.info.title === "编辑商品") {
         this.empty();
       }
     },
@@ -258,23 +340,30 @@ export default {
         //图片
         this.imgUrl = this.$imgPre + this.user.img;
         //属性,取回来的属性得重新请求
-        console.log(typeof this.user.specsattr);//字符串
+        console.log(typeof this.user.specsattr); //字符串
         this.user.specsattr = JSON.parse(this.user.specsattr);
-        //计算规格属性的list
+        //计算规格属性的list，因为规格属性的下拉列表也得渲染
         this.getAttrs();
+        //给编辑器赋值,因为这里是不确定有没有编辑器的，因为编辑器和ajax不知道是哪个先完成，为了保险起见我们在这里写了，在动画结束的时候也得赋值，谁先弄完就先用哪个
+        if (this.editor) {
+          this.editor.txt.html(this.user.description);
+        }
       });
     },
     //21.该修改了,修改的时候我们还是得把其中的规格属性转换为字符串
     update() {
-      let d = { ...this.user };
-      d.specsattr = JSON.stringify(d.specsattr);
-      reqgoodsUpdate(d).then((res) => {
-        if (res.data.code == 200) {
-          successAlert("更新成功");
-          this.cancel();
-          this.empty();
-          this.reqGoodsList();
-        }
+      this.check().then(() => {
+        this.user.description = this.editor.txt.html();
+        let d = { ...this.user };
+        d.specsattr = JSON.stringify(d.specsattr);
+        reqgoodsUpdate(d).then((res) => {
+          if (res.data.code == 200) {
+            successAlert("更新成功");
+            this.cancel();
+            this.empty();
+            this.reqGoodsList();
+          }
+        });
       });
     },
   },

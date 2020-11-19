@@ -1,0 +1,154 @@
+<template>
+  <div class="add">
+    <el-dialog :title="info.title" :visible.sync="info.isShow" @closed="closed">
+      <el-form :model="banner">
+        <el-form-item label="标题" label-width="120px">
+          <el-input v-model="banner.title" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="图片" label-width="120px">
+          <el-upload class="avatar-uploader" action="#" :on-change="Upload" v-if="info.isShow">
+            <img v-if="imgUrl" :src="imgUrl" class="avatar" />
+            <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="状态" label-width="150px">
+          <el-switch v-model="banner.status" :active-value="1" :inactive-value="2"></el-switch>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="info.isShow = false">取 消</el-button>
+
+        <el-button type="primary" @click="add()" v-if="info.title=='轮播图添加'">添 加</el-button>
+        <el-button type="primary" @click="update()" v-else>编 辑</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+<script>
+import {
+  reqBannerAdd,
+  reqBannerDetail,
+  reqBannerUpdate,
+} from "../../../utils/http";
+import { successAlert, errorAlert } from "../../../utils/alert";
+import { mapActions, mapGetters } from "vuex";
+import path from "path";
+export default {
+  props: ["info"],
+  data() {
+    return {
+      banner: {
+        title: "",
+        img: null,
+        status: 1,
+      },
+      //用来放图片的地址
+      imgUrl: null,
+    };
+  },
+  computed: {
+    ...mapGetters({
+      list: "banner/list",
+    }),
+  },
+  methods: {
+    ...mapActions({
+      reqList: "banner/reqList",
+    }),
+    closed() {
+      if (this.info.title === "轮播图编辑") {
+        this.empty();
+      }
+    },
+    cancel() {
+      //弹框消失
+      this.info.isShow = false;
+    },
+    empty() {
+      (this.banner = {
+        title: "",
+        img: null,
+        status: 1,
+      }),
+        (this.imgUrl = null);
+    },
+    //点了添加按钮以后
+    add() {
+      reqBannerAdd(this.banner).then((res) => {
+        //弹成功
+        successAlert("添加成功");
+        //弹框消失
+        this.cancel();
+        //数据清空
+        this.empty();
+        //24 刷新list
+        this.reqList();
+      });
+    },
+    //对图片处理
+    Upload(e) {
+      let extname = path.extname(e.raw.name);
+      let extArr = [".jpg", ".jpeg", ".png", ".jif"];
+      if (!extArr.includes(extname)) {
+        errorAlert("请上传正确的图片格式");
+        return;
+      }
+      if (e.size > 2 * 1024 * 1024) {
+        console.log(e.size);
+        errorAlert("图片大小不能超过2M");
+        return;
+      }
+      this.imgUrl = URL.createObjectURL(e.raw);
+      this.banner.img = e.raw;
+    },
+    getOne(id) {
+      reqBannerDetail(id).then((res) => {
+        if (res.data.code === 200) {
+          this.banner = res.data.list;
+          this.imgUrl = this.$imgPre + res.data.list.img;
+          this.banner.id = id;
+        }
+      });
+    },
+    update() {
+      reqBannerUpdate(this.banner).then((res) => {
+        if (res.data.code === 200) {
+          successAlert(res.data.msg);
+          this.empty();
+          this.cancel();
+          this.reqList();
+        }
+      });
+    },
+  },
+  mounted() {},
+};
+</script>
+<style scoped lang="stylus">
+.add >>> .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 178px;
+  height: 178px;
+  line-height: 178px;
+  text-align: center;
+}
+
+.avatar {
+  width: 178px;
+  height: 178px;
+  display: block;
+}
+</style>
