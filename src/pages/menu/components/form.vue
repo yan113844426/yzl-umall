@@ -45,7 +45,7 @@
           <el-switch v-model="form.status" :active-value="1" :inactive-value="2"></el-switch>
         </el-form-item>
       </el-form>
-      
+
       <div slot="footer" class="dialog-footer">
         <el-button @click="cancel">取 消</el-button>
         <!-- 点击添加按钮就显示添加菜单,点击表格里的编辑按钮就出现编辑菜单 -->
@@ -58,7 +58,7 @@
 <script>
 import { mapGetters, mapActions } from "vuex";
 import { routes } from "../../../router";
-import { reqMenuAdd,reqMenuDetail,reqMenuUpdate } from "../../../utils/http";
+import { reqMenuAdd, reqMenuDetail, reqMenuUpdate } from "../../../utils/http";
 import { successAlert, errorAlert } from "../../../utils/alert";
 export default {
   // 4.接受info
@@ -71,7 +71,7 @@ export default {
         "el-icon-s-tools",
         "el-icon-user-solid",
         "el-icon-s-help",
-        "el-icon-s-operation"
+        "el-icon-s-operation",
       ],
       //9.定义routes
       routes: routes,
@@ -82,12 +82,12 @@ export default {
         icon: "",
         type: "",
         url: "",
-        status: 1
-      }
+        status: 1,
+      },
     };
   },
   computed: {
-    ...mapGetters({})
+    ...mapGetters({}),
   },
   methods: {
     ...mapActions({}),
@@ -113,80 +113,104 @@ export default {
         icon: "",
         type: "",
         url: "",
-        status: 1
+        status: 1,
       };
     },
+    //验证
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.form.title === "") {
+          errorAlert("菜单名称不能为空");
+          return;
+        }
+        if (this.form.pid === "") {
+          errorAlert("上级菜单不能为空");
+          return;
+        }
+        if (this.form.type === "") {
+          errorAlert("菜单类型为空");
+          return;
+        }
+
+        resolve();
+      });
+    },
+
     //12.点击了添加按钮
     add() {
-      //发起添加的请求
-      reqMenuAdd(this.form).then(res => {
-        if (res.data.code === 200) {
-          //成功
-          //弹个成功
-          successAlert("添加成功");
-          //弹框消失
-          this.cancel();
-          //form置空
-          this.empty();
-          //24.通知menu刷新列表数据
-          //添加完成以后需要刷新一下table的数据
-          this.$emit("init");
-        } else {
-          errorAlert(res.data.msg);
-        }
+      this.check().then(() => {
+        //发起添加的请求
+        reqMenuAdd(this.form).then((res) => {
+          if (res.data.code === 200) {
+            //成功
+            //弹个成功
+            successAlert("添加成功");
+            //弹框消失
+            this.cancel();
+            //form置空
+            this.empty();
+            //24.通知menu刷新列表数据
+            //添加完成以后需要刷新一下table的数据
+            this.$emit("init");
+          } else {
+            errorAlert(res.data.msg);
+          }
+        });
       });
     },
     //36.获取一条数据
-    getOne(id){
-        reqMenuDetail(id).then(res=>{
-            //此时form上是没有id的
-            //就应该把现在的数据赋值给this.form
-            this.form=res.data.list
-            //但是回来的数据没有id,需要补一个,
-            //这个id就是点编辑按钮传过来的
-            //这个补的id就是用来给  reqMenuUpdate
-            this.form.id=id
-        })
+    getOne(id) {
+      reqMenuDetail(id).then((res) => {
+        //此时form上是没有id的
+        //就应该把现在的数据赋值给this.form
+        this.form = res.data.list;
+        //但是回来的数据没有id,需要补一个,
+        //这个id就是点编辑按钮传过来的
+        //这个补的id就是用来给  reqMenuUpdate
+        this.form.id = id;
+      });
     },
     //37 点了修改
-    update(){
-      // 把你修改的东西给后端
-        reqMenuUpdate(this.form).then(res=>{
-            if(res.data.code===200){
-                //成功弹框
-                successAlert("修改成功")
-                //弹框消失
-                this.cancel()
-                //form重置
-                this.empty()
-                //列表刷新
-                this.$emit("init")
-            }else{
-                errorAlert(res.data.msg)
-            }
-
-        })
+    update() {
+      this.check().then(() => {
+        // 把你修改的东西给后端
+        reqMenuUpdate(this.form).then((res) => {
+          if (res.data.code === 200) {
+            //成功弹框
+            successAlert("修改成功");
+            //弹框消失
+            this.cancel();
+            //form重置
+            this.empty();
+            //列表刷新
+            this.$emit("init");
+          } else {
+            errorAlert(res.data.msg);
+          }
+        });
+      });
     },
     //38.弹框消失
     // 在这个表单动画消失的情况下会触发一个事件
-    closed(){
-        // 如果是添加出现，点击了取消，此时，什么都不做
-        // 如果是编辑出现，点击了取消，此时，form置空
-        if(this.info.title==="编辑菜单"){
-            this.empty()
-        }
-    }
+    closed() {
+      // 如果是添加出现，点击了取消，此时，什么都不做
+      // 如果是编辑出现，点击了取消，此时，form置空
+      if (this.info.title === "编辑菜单") {
+        this.empty();
+      }
+    },
   },
   mounted() {
-    console.log(123)
+    console.log(123);
     // 这个时候子组件挂载完成会一上来执行一次，这个时候list还没有渲染上
-    console.log(this.list)
-    console.log(this.$props)
+    console.log(this.list);
+    console.log(this.$props);
   },
-  beforeUpdate(){
-    console.log(456)
-     console.log(this.list)
-  }
+  beforeUpdate() {
+    console.log(456);
+    console.log(this.list);
+  },
 };
 </script>
 <style scoped>

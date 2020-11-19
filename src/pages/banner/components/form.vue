@@ -72,17 +72,34 @@ export default {
       }),
         (this.imgUrl = null);
     },
+    //验证
+    check() {
+      return new Promise((resolve, reject) => {
+        if (this.banner.title === "") {
+          errorAlert("标题不能为空");
+          return;
+        }
+        if (this.imgUrl === null) {
+          errorAlert("图片不能为空");
+          return;
+        }
+        resolve();
+      });
+    },
+
     //点了添加按钮以后
     add() {
-      reqBannerAdd(this.banner).then((res) => {
-        //弹成功
-        successAlert("添加成功");
-        //弹框消失
-        this.cancel();
-        //数据清空
-        this.empty();
-        //24 刷新list
-        this.reqList();
+      this.check().then(() => {
+        reqBannerAdd(this.banner).then((res) => {
+          //弹成功
+          successAlert("添加成功");
+          //弹框消失
+          this.cancel();
+          //数据清空
+          this.empty();
+          //24 刷新list
+          this.reqList();
+        });
       });
     },
     //对图片处理
@@ -111,13 +128,15 @@ export default {
       });
     },
     update() {
-      reqBannerUpdate(this.banner).then((res) => {
-        if (res.data.code === 200) {
-          successAlert(res.data.msg);
-          this.empty();
-          this.cancel();
-          this.reqList();
-        }
+      this.check().then(() => {
+        reqBannerUpdate(this.banner).then((res) => {
+          if (res.data.code === 200) {
+            successAlert(res.data.msg);
+            this.empty();
+            this.cancel();
+            this.reqList();
+          }
+        });
       });
     },
   },

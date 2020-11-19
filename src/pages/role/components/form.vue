@@ -22,7 +22,7 @@
             show-checkbox
             node-key="id"
             ref="tree"
-            :props='{ children: "children",label: "title", }'
+            :props="{children: 'children',label: 'title'}"
           >
             <!-- 我们要展示的词语是title -->
           </el-tree>
@@ -37,20 +37,20 @@
         <!-- 10.如果info的title标题是添加角色，那么这里显示的就应该是添加按钮，否则修改按钮 -->
         <!-- 16.一旦我们点了这个添加按钮就该做添加请求 -->
         <el-button type="primary" v-if="info.title=='添加角色'" @click="add">添加</el-button>
-      <el-button type="primary" v-else @click="update">修 改</el-button>
+        <el-button type="primary" v-else @click="update">修 改</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 <script>
 import { mapGetters, mapActions } from "vuex";
-import { successAlert } from "../../../utils/alert";
+import { successAlert, errorAlert } from "../../../utils/alert";
 //15.reqRoleAdd要用到请求接口
 import {
   reqMenuList,
   reqRoleAdd,
   reqRoleDetail,
-  reqRoleUpdate
+  reqRoleUpdate,
 } from "../../../utils/http";
 export default {
   //8.接收info
@@ -90,26 +90,44 @@ export default {
       //把选中的清空
       this.$refs.tree.setCheckedKeys([]);
     },
+    //
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.rolename === "") {
+          errorAlert("角色名称不能为空");
+          return;
+        }
+        //验证
+        if (this.$refs.tree.getCheckedKeys().length === 0) {
+          errorAlert("角色权限不能为空");
+          return;
+        }
+        resolve();
+      });
+    },
     add() {
-      //17.添加按钮的操作
-      //我们就可以做添加请求了，添加之前应该把选中的key赋值给menus
-      //21.将树形空间的数据取出，变成字符串数组，赋值给user.menu
-      this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
-      reqRoleAdd(this.user).then((res) => {
-        //弹个成功
-        successAlert("恭喜添加成功");
-        //弹框消失
-        this.cancel();
-        //数据清空
-        this.empty();
-        //28.刷新列表list，通过父组件该刷新列表了
-        this.$emit("init");
+      this.check().then(() => {
+        //17.添加按钮的操作
+        //我们就可以做添加请求了，添加之前应该把选中的key赋值给menus
+        //21.将树形空间的数据取出，变成字符串数组，赋值给user.menu
+        this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
+        reqRoleAdd(this.user).then((res) => {
+          //弹个成功
+          successAlert("恭喜添加成功");
+          //弹框消失
+          this.cancel();
+          //数据清空
+          this.empty();
+          //28.刷新列表list，通过父组件该刷新列表了
+          this.$emit("init");
+        });
       });
     },
     //这个id是点击编辑按钮获取的id
     getOne(id) {
       reqRoleDetail(id).then((res) => {
-        console.log(res)
+        console.log(res);
         //此刻user没有id
         this.user = res.data.list;
         //处理树形控件的数据
@@ -120,27 +138,29 @@ export default {
         this.user.id = id;
       });
     },
-        update() {
-      this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
-      reqRoleUpdate(this.user).then(res=>{
-         if (res.data.code == 200) {
-          //弹成功
-          successAlert("修改成功");
-          //弹框消失
-          this.cancel();
-          //数据清空
-          this.empty();
-          //刷新list
-          this.$emit("init");
-        }
-      })
+    update() {
+      this.check().then(() => {
+        this.user.menus = JSON.stringify(this.$refs.tree.getCheckedKeys());
+        reqRoleUpdate(this.user).then((res) => {
+          if (res.data.code == 200) {
+            //弹成功
+            successAlert("修改成功");
+            //弹框消失
+            this.cancel();
+            //数据清空
+            this.empty();
+            //刷新list
+            this.$emit("init");
+          }
+        });
+      });
     },
     //41.处理消失
-closed(){
-    if(this.info.title==='编辑角色'){
-        this.empty()
-    }
-}
+    closed() {
+      if (this.info.title === "编辑角色") {
+        this.empty();
+      }
+    },
   },
   mounted() {
     //19.一进来我们就需要获取菜单列表的数据去渲染页面

@@ -47,9 +47,32 @@ export default {
     ...mapActions({
       reqvipList: "vip/reqList",
     }),
-    empty() {},
+    empty() {
+      (this.user = {
+        uid: "",
+        status: 1,
+        nickname: "",
+        phone: "",
+        password: "",
+      }),
+        (this.oldpass = "");
+    },
     cancel() {
       this.info.isshow = false;
+    },
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.nickname === "") {
+          errorAlert("手机号不能为空");
+          return;
+        }
+        if (this.user.phone === "") {
+          errorAlert("昵称不能为空");
+          return;
+        }
+        resolve();
+      });
     },
     closed() {
       this.empty();
@@ -62,39 +85,41 @@ export default {
       });
     },
     update() {
-      if (this.user.password == "") {
-        this.p = { ...this.user };
-        this.p.password = this.oldpass;
-        this.oldpass = "";
-      }
-      if (this.user.password === "") {
-        reqvipUpdate(this.p).then((res) => {
-          if (res.data.code == 200) {
-            //弹成功
-            successAlert("修改成功");
-            //弹框消失
-            this.cancel();
-            //数据清空
-            this.empty();
-            //刷新list
-            this.reqvipList();
-          }
-        });
-      } else {
-        //如果password修改了，就用this.user
-        reqvipUpdate(this.user).then((res) => {
-          if (res.data.code == 200) {
-            //弹成功
-            successAlert("修改成功");
-            //弹框消失
-            this.cancel();
-            //数据清空
-            this.empty();
-            //刷新list
-            this.reqvipList();
-          }
-        });
-      }
+      this.check().then(() => {
+        if (this.user.password == "") {
+          this.p = { ...this.user };
+          this.p.password = this.oldpass;
+          this.oldpass = "";
+        }
+        if (this.user.password === "") {
+          reqvipUpdate(this.p).then((res) => {
+            if (res.data.code == 200) {
+              //弹成功
+              successAlert("修改成功");
+              //弹框消失
+              this.cancel();
+              //数据清空
+              this.empty();
+              //刷新list
+              this.reqvipList();
+            }
+          });
+        } else {
+          //如果password修改了，就用this.user
+          reqvipUpdate(this.user).then((res) => {
+            if (res.data.code == 200) {
+              //弹成功
+              successAlert("修改成功");
+              //弹框消失
+              this.cancel();
+              //数据清空
+              this.empty();
+              //刷新list
+              this.reqvipList();
+            }
+          });
+        }
+      });
     },
   },
   mounted() {},

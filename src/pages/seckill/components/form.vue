@@ -170,28 +170,62 @@ export default {
         this.goodsArr = res.data.list;
       });
     },
-    add() {
-      this.seck.begintime = this.timevalue[0];
-      this.seck.endtime = this.timevalue[1];
-      reqSecksAdd(this.seck).then((res) => {
-        //添加成功以后应该
-        successAlert("添加成功");
-        this.cancel();
-        this.empty();
-        this.reqList();
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.seck.title === "") {
+          errorAlert("活动名称不能为空");
+          return;
+        }
+        if (this.timevalue.length === 0) {
+          errorAlert("活动期限不能为空");
+          return;
+        }
+
+        if (this.seck.first_cateid === "") {
+          errorAlert("一级分类为空");
+          return;
+        }
+
+        if (this.seck.second_cateid === "") {
+          errorAlert("二级分类不能为空");
+          return;
+        }
+
+        if (this.seck.goodsid === "") {
+          errorAlert("商品为空");
+          return;
+        }
+
+        resolve();
       });
     },
-    update() {
-      //点了更新以后
-      this.seck.begintime = this.timevalue[0];
-      this.seck.endtime = this.timevalue[1];
-      reqSecksUpdate(this.seck).then((res) => {
-        if (res.data.code == 200) {
-          successAlert("更新成功");
+    add() {
+      this.check().then(() => {
+        this.seck.begintime = this.timevalue[0];
+        this.seck.endtime = this.timevalue[1];
+        reqSecksAdd(this.seck).then((res) => {
+          //添加成功以后应该
+          successAlert("添加成功");
           this.cancel();
           this.empty();
           this.reqList();
-        }
+        });
+      });
+    },
+    update() {
+      this.check().then(() => {
+        //点了更新以后
+        this.seck.begintime = this.timevalue[0];
+        this.seck.endtime = this.timevalue[1];
+        reqSecksUpdate(this.seck).then((res) => {
+          if (res.data.code == 200) {
+            successAlert("更新成功");
+            this.cancel();
+            this.empty();
+            this.reqList();
+          }
+        });
       });
     },
     closed() {

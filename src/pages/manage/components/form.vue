@@ -40,7 +40,7 @@ import {
   reqUserDetail,
   reqUserUpdate,
 } from "../../../utils/http";
-import { successAlert } from "../../../utils/alert";
+import { successAlert,errorAlert } from "../../../utils/alert";
 export default {
   props: ["info"],
   data() {
@@ -71,23 +71,47 @@ export default {
     cancel() {
       this.info.isshow = false;
     },
-    add() {
-      //点击了添加按钮以后提交数据给后天
-      reqUserAdd(this.user).then((res) => {
-        //添加成功以后
-        if (res.data.code == 200) {
-          //弹出一个弹窗告诉用户添加成功
-          //弹成功
-          successAlert("添加成功");
-          //弹框消失
-          this.cancel();
-          //数据清空
-          this.empty();
-          //刷新tabel表格
-          this.$emit("init");
+    //验证
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.roleid === "") {
+          errorAlert("所属角色不能为空");
+          return;
         }
+        if (this.user.username === "") {
+          errorAlert("用户名不能为空");
+          return;
+        }
+
+        if (this.user.password === "") {
+          errorAlert("密码不能为空");
+          return;
+        }
+
+        resolve();
       });
     },
+    add() {
+      this.check().then(() => {
+        //点击了添加按钮以后提交数据给后天
+        reqUserAdd(this.user).then((res) => {
+          //添加成功以后
+          if (res.data.code == 200) {
+            //弹出一个弹窗告诉用户添加成功
+            //弹成功
+            successAlert("添加成功");
+            //弹框消失
+            this.cancel();
+            //数据清空
+            this.empty();
+            //刷新tabel表格
+            this.$emit("init");
+          }
+        });
+      });
+    },
+
     getOne(uid) {
       //根据这个uid获取回来的这一条数据，赋值给表单
       reqUserDetail(uid).then((res) => {
@@ -99,17 +123,19 @@ export default {
       });
     },
     update() {
-      reqUserUpdate(this.user).then((res) => {
-        if (res.data.code == 200) {
-          //弹成功
-          successAlert("修改成功");
-          //弹框消失
-          this.cancel();
-          //数据清空
-          this.empty();
-          //刷新list
-          this.$emit("init");
-        }
+      this.check().then(() => {
+        reqUserUpdate(this.user).then((res) => {
+          if (res.data.code == 200) {
+            //弹成功
+            successAlert("修改成功");
+            //弹框消失
+            this.cancel();
+            //数据清空
+            this.empty();
+            //刷新list
+            this.$emit("init");
+          }
+        });
       });
     },
     //处理弹框消失的时候

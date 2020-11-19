@@ -47,11 +47,7 @@
 import { mapGetters, mapActions } from "vuex";
 import path from "path";
 import { successAlert, errorAlert } from "../../../utils/alert";
-import {
-  reqcateAdd,
-  reqcateDetail,
-  reqcateUpdate,
-} from "../../../utils/http";
+import { reqcateAdd, reqcateDetail, reqcateUpdate } from "../../../utils/http";
 
 export default {
   props: ["info"],
@@ -106,31 +102,56 @@ export default {
       this.imageUrl = URL.createObjectURL(file);
       this.user.img = file;
     },
-    add() {
-      //点击了添加按钮以后
-      reqcateAdd(this.user).then((res) => {
-        //弹成功
-        successAlert("添加成功");
-        //弹框消失
-        this.cancel();
-        //数据清空
-        this.empty();
-        //24 刷新list
-        this.reqList();
+    //验证规则
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.pid === "") {
+          errorAlert("上级分类不能为空");
+          return;
+        }
+        if (this.user.catename === "") {
+          errorAlert("分类名称不能为空");
+          return;
+        }
+        //因为顶级分类不需要上传图片，顶级分类的pid为0
+        if (this.imgUrl == null && this.user.pid !== 0) {
+          errorAlert("图片为空");
+          return;
+        }
+
+        resolve();
       });
     },
-    update() {
-      reqcateUpdate(this.user).then((res) => {
-        if (res.data.code == 200) {
+    add() {
+      this.check().then(() => {
+        //点击了添加按钮以后
+        reqcateAdd(this.user).then((res) => {
           //弹成功
-          successAlert("修改成功");
+          successAlert("添加成功");
           //弹框消失
           this.cancel();
           //数据清空
           this.empty();
-          //刷新list
+          //24 刷新list
           this.reqList();
-        }
+        });
+      });
+    },
+    update() {
+      this.check().then(() => {
+        reqcateUpdate(this.user).then((res) => {
+          if (res.data.code == 200) {
+            //弹成功
+            successAlert("修改成功");
+            //弹框消失
+            this.cancel();
+            //数据清空
+            this.empty();
+            //刷新list
+            this.reqList();
+          }
+        });
       });
     },
     cancel() {

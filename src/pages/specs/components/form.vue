@@ -36,7 +36,7 @@ import {
   reqspecsUpdate,
   reqspecsDel,
 } from "../../../utils/http";
-import { successAlert } from "../../../utils/alert";
+import { successAlert, errorAlert } from "../../../utils/alert";
 export default {
   props: ["info"],
   data() {
@@ -56,14 +56,12 @@ export default {
     };
   },
   computed: {
-    ...mapGetters({
-      
-    }),
+    ...mapGetters({}),
   },
   methods: {
     ...mapActions({
-       reqList: "specs/reqList",
-          reqCount:"specs/reqCount",
+      reqList: "specs/reqList",
+      reqCount: "specs/reqCount",
     }),
     empty() {
       this.user = {
@@ -74,22 +72,41 @@ export default {
       //属性值
       this.attrArr = [{ value: "" }];
     },
-    add() {
-      // console.log(this.user)
-      //这个时候这个数组里有我们的规格属性
-      //[{ value: "s" }，{value："m"}]
-      //转成[s,m]
-      // console.log(this.attrArr)
-      this.user.attrs = JSON.stringify(this.attrArr.map((item) => item.value));
-      reqspecsAdd(this.user).then((res) => {
-        if (res.data.code === 200) {
-          successAlert("添加成功");
-          this.cancel();
-          this.empty();
-          //刷新list
-          this.reqList();
-          this.reqCount();
+    check() {
+      return new Promise((resolve, reject) => {
+        //验证
+        if (this.user.specsname === "") {
+          errorAlert("规格名称不能为空");
+          return;
         }
+        if (this.attrArr.length <= 1) {
+          errorAlert("规格属性不能为空");
+          return;
+        }
+
+        resolve();
+      });
+    },
+    add() {
+      this.check().then(() => {
+        // console.log(this.user)
+        //这个时候这个数组里有我们的规格属性
+        //[{ value: "s" }，{value："m"}]
+        //转成[s,m]
+        // console.log(this.attrArr)
+        this.user.attrs = JSON.stringify(
+          this.attrArr.map((item) => item.value)
+        );
+        reqspecsAdd(this.user).then((res) => {
+          if (res.data.code === 200) {
+            successAlert("添加成功");
+            this.cancel();
+            this.empty();
+            //刷新list
+            this.reqList();
+            this.reqCount();
+          }
+        });
       });
     },
     //新增规格属性
@@ -102,23 +119,29 @@ export default {
     cancel() {
       this.info.isshow = false;
     },
-    getOne(id){
-        reqspecsDetail(id).then(res=>{
-            this.user=res.data.list[0]
-            //  '["s","M"]'-->[{value:"s"},{value:"M"}]
-            this.attrArr=JSON.parse(this.user.attrs).map(item=>({value:item}))
-        })
+    getOne(id) {
+      reqspecsDetail(id).then((res) => {
+        this.user = res.data.list[0];
+        //  '["s","M"]'-->[{value:"s"},{value:"M"}]
+        this.attrArr = JSON.parse(this.user.attrs).map((item) => ({
+          value: item,
+        }));
+      });
     },
     update() {
-        this.user.attrs=JSON.stringify(this.attrArr.map(item=>item.value))
-        reqspecsUpdate(this.user).then(res=>{
-            if(res.data.code==200){
-                successAlert("更新成功")
-                this.cancel()
-                this.empty()
-                this.reqList()
-            }
-        })
+      this.check().then(() => {
+        this.user.attrs = JSON.stringify(
+          this.attrArr.map((item) => item.value)
+        );
+        reqspecsUpdate(this.user).then((res) => {
+          if (res.data.code == 200) {
+            successAlert("更新成功");
+            this.cancel();
+            this.empty();
+            this.reqList();
+          }
+        });
+      });
     },
     closed() {
       if (this.info.title === "编辑分类") {

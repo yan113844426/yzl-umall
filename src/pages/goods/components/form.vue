@@ -300,6 +300,7 @@ export default {
             this.reqGoodsList();
             //添加也会引起分页的变化
             this.reqGoodsCount();
+            
           }
         });
       });
